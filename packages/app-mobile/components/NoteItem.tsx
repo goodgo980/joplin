@@ -167,40 +167,59 @@ const NoteItemComponent: React.FC<Props> = memo(props => {
 		}
 	}, [props.note, props.noteSelectionEnabled, props.dispatch]);
 
-const onLongPress = useCallback(async () => {
-    const now = Date.now();
-    if (now < suppressPressUntilRef.current) return;
-    suppressPressUntilRef.current = now + 500;
-    if (!props.note) return;
+	const onLongPress = useCallback(async () => {
+		const now = Date.now();
 
-    // 加载完整笔记（确保有 body 字段）
-    const fullNote = await Note.load(props.note.id);
-    if (!fullNote) return;
+		// Suppress duplicate long press triggers during interval, to avoid conflicting with right click event handling on web
+		if (now < suppressPressUntilRef.current) return;
+		suppressPressUntilRef.current = now + 500;
 
-    Alert.alert(
-        fullNote.title || '笔记操作',
-        '选择操作：',
-        [
-            {
-                text: '复制内容',
-                onPress: () => {
-                    Clipboard.setString(`${fullNote.title ?? ''}\n\n${fullNote.body ?? ''}`);
-                    ToastAndroid.show('已复制到剪贴板', ToastAndroid.SHORT);
-                },
-            },
-            {
-                text: '剪切笔记',
-                onPress: async () => {
-                    Clipboard.setString(`${fullNote.title ?? ''}\n\n${fullNote.body ?? ''}`);
-                    await Note.delete(fullNote.id);
-                    ToastAndroid.show('已复制，原笔记已移入回收站', ToastAndroid.SHORT);
-                },
-            },
-            { text: '取消', style: 'cancel' },
-        ],
-        { cancelable: true }
-    );
-}, [props.dispatch, props.note, props.noteSelectionEnabled]);
+		if (!props.note) return;
+
+		// 加载完整笔记（确保有 body 字段）
+		const fullNote = await Note.load(props.note.id);
+		if (!fullNote) return;
+
+		const noteContent = `${fullNote.title ?? ''}\n\n${fullNote.body ?? ''}`;
+
+		Alert.alert(
+			fullNote.title || '笔记操作',
+			'选择操作：',
+			[
+				{
+					text: '复制内容',
+					onPress: () => {
+						Clipboard.setString(noteContent);
+						ToastAndroid.show('已复制到剪贴板', ToastAndroid.SHORT);
+					},
+				},
+				{
+					text: '剪切笔记',
+					onPress: async () => {
+						Clipboard.setString(noteContent);
+						await Note.delete(fullNote.id);
+						ToastAndroid.show('已复制，原笔记已移入回收站', ToastAndroid.SHORT);
+					},
+				},
+				{
+					text: '多选',
+					onPress: () => {
+						if (!props.noteSelectionEnabled) {
+							AccessibilityInfo.announceForAccessibility(_('Entering selection mode'));
+						}
+						props.dispatch({
+							type: props.noteSelectionEnabled ? 'NOTE_SELECTION_TOGGLE' : 'NOTE_SELECTION_START',
+							id: props.note.id,
+						});
+					},
+				},
+				{ text: '取消', style: 'cancel' },
+			],
+			{ cancelable: true },
+		);
+
+	}, [props.dispatch, props.note, props.noteSelectionEnabled]);
+
 
 
 
