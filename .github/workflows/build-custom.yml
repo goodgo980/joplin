@@ -1,0 +1,64 @@
+name: Build Custom APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  BuildRelease:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update || true
+          sudo apt-get install -y libsecret-1-dev
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /usr/share/swift || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+          sudo rm -rf /usr/local/share/boost || true
+          sudo rm -rf /usr/local/share/powershell || true
+          docker system prune -af || true
+          df -h /
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '20'
+
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'yarn'
+
+      - name: Install
+        run: |
+          yarn install --network-timeout 600000
+        env:
+          SKIP_ONENOTE_CONVERTER_BUILD: 1
+
+      - name: Restore keystore and build Release APK
+        working-directory: packages/app-mobile/android
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
+          ORG_GRADLE_PROJECT_JOPLIN_RELEASE_STORE_FILE: release.keystore
+          ORG_GRADLE_PROJECT_JOPLIN_RELEASE_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_JOPLIN_RELEASE_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_JOPLIN_RELEASE_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > app/release.keystore
+          ls -la app/release.keystore
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: joplin-custom-apk
+          path: packages/app-mobile/android/app/build/outputs/apk/release/*.apk
+          retention-days: 30
+          if-no-files-found: error
