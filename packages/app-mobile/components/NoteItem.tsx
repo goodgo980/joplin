@@ -18,6 +18,9 @@ import NoteLockNote from '@joplin/lib/services/noteLock/NoteLockNote';
 import NoteLockSession from '@joplin/lib/services/noteLock/NoteLockSession';
 import { DialogContext } from './DialogManager';
 import Icon from './Icon';
+import { Alert, ToastAndroid } from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
+
 
 interface Props {
 	dispatch: Dispatch;
@@ -164,23 +167,41 @@ const NoteItemComponent: React.FC<Props> = memo(props => {
 		}
 	}, [props.note, props.noteSelectionEnabled, props.dispatch]);
 
-	const onLongPress = useCallback(() => {
-		const now = Date.now();
-		// Suppress duplicate long press triggers during interval, to avoid conflicting with right click event handling on web
-		if (now < suppressPressUntilRef.current) return;
-		suppressPressUntilRef.current = now + 500;
+const onLongPress = useCallback(async () => {
+    const now = Date.now();
+    if (now < suppressPressUntilRef.current) return;
+    suppressPressUntilRef.current = now + 500;
+    if (!props.note) return;
 
-		if (!props.note) return;
+    // 加载完整笔记（确保有 body 字段）
+    const fullNote = await Note.load(props.note.id);
+    if (!fullNote) return;
 
-		if (!props.noteSelectionEnabled) {
-			AccessibilityInfo.announceForAccessibility(_('Entering selection mode'));
-		}
+    Alert.alert(
+        fullNote.title || '笔记操作',
+        '选择操作：',
+        [
+            {
+                text: '复制内容',
+                onPress: () => {
+                    Clipboard.setString(`${fullNote.title ?? ''}\n\n${fullNote.body ?? ''}`);
+                    ToastAndroid.show('已复制到剪贴板', ToastAndroid.SHORT);
+                },
+            },
+            {
+                text: '剪切笔记',
+                onPress: async () => {
+                    Clipboard.setString(`${fullNote.title ?? ''}\n\n${fullNote.body ?? ''}`);
+                    await Note.delete(fullNote.id);
+                    ToastAndroid.show('已复制，原笔记已移入回收站', ToastAndroid.SHORT);
+                },
+            },
+            { text: '取消', style: 'cancel' },
+        ],
+        { cancelable: true }
+    );
+}, [props.dispatch, props.note, props.noteSelectionEnabled]);
 
-		props.dispatch({
-			type: props.noteSelectionEnabled ? 'NOTE_SELECTION_TOGGLE' : 'NOTE_SELECTION_START',
-			id: props.note.id,
-		});
-	}, [props.dispatch, props.note, props.noteSelectionEnabled]);
 
 
 	const note = props.note ?? {};
