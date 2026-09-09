@@ -180,8 +180,6 @@ const NoteItemComponent: React.FC<Props> = memo(props => {
 		const fullNote = await Note.load(props.note.id);
 		if (!fullNote) return;
 
-		const noteContent = `${fullNote.title ?? ''}\n\n${fullNote.body ?? ''}`;
-
 		Alert.alert(
 			fullNote.title || '笔记操作',
 			'选择操作：',
