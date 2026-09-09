@@ -187,19 +187,20 @@ const NoteItemComponent: React.FC<Props> = memo(props => {
 			'选择操作：',
 			[
 				{
-					text: '复制内容',
-					onPress: () => {
-						Clipboard.setString(noteContent);
-						ToastAndroid.show('已复制到剪贴板', ToastAndroid.SHORT);
-					},
+				 text: '复制正文',
+                onPress: () => {
+                    Clipboard.setString(fullNote.body ?? '');
+                    ToastAndroid.show('已复制笔记内容', ToastAndroid.SHORT);
+                },
 				},
 				{
-					text: '剪切笔记',
-					onPress: async () => {
-						Clipboard.setString(noteContent);
-						await Note.delete(fullNote.id);
-						ToastAndroid.show('已复制，原笔记已移入回收站', ToastAndroid.SHORT);
-					},
+				text: '剪切笔记',
+                onPress: async () => {
+                    Clipboard.setString(fullNote.body ?? '');
+                    await Note.delete(fullNote.id);
+                    ToastAndroid.show('已复制内容，原笔记已移入回收站', ToastAndroid.SHORT);
+                },
+
 				},
 				{
 					text: '多选',
