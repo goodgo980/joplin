@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { memo, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { connect } from 'react-redux';
-import { Text, View, StyleSheet } from 'react-native';
+import { Text, View, StyleSheet, TextStyle, ViewStyle, Alert, ToastAndroid } from 'react-native';
 import Checkbox from './Checkbox';
 import Note from '@joplin/lib/models/Note';
 import time from '@joplin/lib/time';
@@ -18,7 +18,6 @@ import NoteLockNote from '@joplin/lib/services/noteLock/NoteLockNote';
 import NoteLockSession from '@joplin/lib/services/noteLock/NoteLockSession';
 import { DialogContext } from './DialogManager';
 import Icon from './Icon';
-import { Alert, ToastAndroid } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import { Menu, MenuOptions, MenuOption, MenuTrigger, renderers } from 'react-native-popup-menu';
 
@@ -82,6 +81,37 @@ const useStyles = (themeId: number, showTopBorder: boolean) => {
 		selectionWrapperSelected.borderBottomWidth = 1;
 		selectionWrapperSelected.marginVertical = -1;
 
+		// ===== 长按菜单（SlideInMenu 底部弹层）样式 =====
+
+		// 弹层容器：库默认写死白底，这里改为跟随主题
+		const menuContainer: ViewStyle = {
+			backgroundColor: theme.backgroundColor,
+			borderTopLeftRadius: 14,
+			borderTopRightRadius: 14,
+			paddingTop: 8,
+			// SlideInMenu 源码未处理 safe area，
+			// 手势导航设备上系统横条可能压住最后一项，给足底部留白
+			paddingBottom: 16,
+		};
+
+		// 弹层顶部的小拖动条（纯装饰）
+		const menuHandle: ViewStyle = {
+			alignSelf: 'center',
+			width: 36,
+			height: 4,
+			borderRadius: 2,
+			backgroundColor: theme.dividerColor,
+			marginTop: 6,
+			marginBottom: 2,
+		};
+
+		// 菜单项文字颜色：MenuOption 的 text 简写默认继承黑色，
+		// 暗色主题下必须显式指定为 theme.color，否则看不见
+		const menuOptionText: TextStyle = {
+			color: theme.color,
+			fontSize: theme.fontSize,
+		};
+
 		return StyleSheet.create({
 			listItemDivider,
 			listItemText,
@@ -112,11 +142,15 @@ const useStyles = (themeId: number, showTopBorder: boolean) => {
 				opacity: 0.4,
 			},
 			uncheckedOpacityStyle: { },
+			// ===== 新增的菜单样式 =====
+			menuContainer,
+			menuHandle,
+			menuOptionText,
 		});
 	}, [themeId, showTopBorder]);
 };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 库会向 trigger 组件传触摸 props，此处仅透传
 const { SlideInMenu } = renderers;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 库会向 trigger 组件传触摸 props，此处仅透传
 const TriggerPassthrough = React.forwardRef<View, any>(
 	(props, ref) => (
 		<View ref={ref} collapsable={false}>
@@ -293,14 +327,21 @@ const onLongPress = useCallback(() => {
 			</MultiTouchableOpacity>
 		</View>
 		</MenuTrigger>
-		<MenuOptions customStyles={{ optionWrapper: { padding: 14 } }}>
-			<MenuOption onSelect={() => void copyNoteContent()} text='复制内容' />
-			<MenuOption onSelect={() => void cutNoteToClipboard()} text='剪切笔记' />
-			<MenuOption onSelect={startMultiSelect} text='多选' />
-			<MenuOption onSelect={deleteNoteWithConfirm}>
-				<Text style={{ color: '#e5484d', fontSize: 16 }}>删除笔记</Text>
-			</MenuOption>
-		</MenuOptions>
+<MenuOptions
+	customStyles={{
+		optionsContainer: styles.menuContainer,          // 背景色 + 圆角 + padding
+		optionText: { color: theme.color },              // 见下方说明
+		optionWrapper: { padding: 14 },
+	}}
+>
+	<View style={styles.menuHandle} />                   {/* 可选：拖动条装饰 */}
+	<MenuOption onSelect={() => void copyNoteContent()} text='复制内容' />
+	<MenuOption onSelect={() => void cutNoteToClipboard()} text='剪切笔记' />
+	<MenuOption onSelect={startMultiSelect} text='多选' />
+	<MenuOption onSelect={deleteNoteWithConfirm}>
+		<Text style={{ color: '#e5484d', fontSize: 16 }}>删除笔记</Text>
+	</MenuOption>
+</MenuOptions>
 	</Menu>
 
 	);
