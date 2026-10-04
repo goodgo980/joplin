@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { memo, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { connect } from 'react-redux';
-import { Text, StyleSheet, TextStyle, View, ViewStyle, AccessibilityInfo } from 'react-native';
+import { Text, View, StyleSheet } from 'react-native';
 import Checkbox from './Checkbox';
 import Note from '@joplin/lib/models/Note';
 import time from '@joplin/lib/time';
@@ -20,7 +20,7 @@ import { DialogContext } from './DialogManager';
 import Icon from './Icon';
 import { Alert, ToastAndroid } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
-import { Menu, MenuOptions, MenuOption, MenuTrigger, SlideInMenu } from 'react-native-popup-menu';
+import { Menu, MenuOptions, MenuOption, MenuTrigger, renderers } from 'react-native-popup-menu';
 
 
 
@@ -116,6 +116,7 @@ const useStyles = (themeId: number, showTopBorder: boolean) => {
 	}, [themeId, showTopBorder]);
 };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 库会向 trigger 组件传触摸 props，此处仅透传
+const { SlideInMenu } = renderers;
 const TriggerPassthrough = React.forwardRef<View, any>(
 	(props, ref) => (
 		<View ref={ref} collapsable={false}>
