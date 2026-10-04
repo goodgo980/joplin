@@ -115,6 +115,7 @@ const useStyles = (themeId: number, showTopBorder: boolean) => {
 		});
 	}, [themeId, showTopBorder]);
 };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 库会向 trigger 组件传触摸 props，此处仅透传
 const TriggerPassthrough = React.forwardRef<View, any>(
 	(props, ref) => (
 		<View ref={ref} collapsable={false}>
