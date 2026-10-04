@@ -193,6 +193,9 @@ const NoteItemComponent: React.FC<Props> = memo(props => {
 
 	const onPress = useCallback(() => {
 		// Suppress touch release triggers during interval, to avoid conflicting with right click event handling on web
+
+
+		
 		if (Date.now() < suppressPressUntilRef.current) return;
 		if (!props.note) return;
 		if (props.note.encryption_applied) return;
@@ -329,8 +332,8 @@ const onLongPress = useCallback(() => {
 		</MenuTrigger>
 <MenuOptions
 	customStyles={{
-		optionsContainer: styles.menuContainer,          // 背景色 + 圆角 + padding
-		optionText: { color: theme.color },              // 见下方说明
+		optionsContainer: styles.menuContainer,
+		optionText: styles.menuOptionText,     // ← 改这里
 		optionWrapper: { padding: 14 },
 	}}
 >
