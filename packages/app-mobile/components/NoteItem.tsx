@@ -20,6 +20,8 @@ import { DialogContext } from './DialogManager';
 import Icon from './Icon';
 import { Alert, ToastAndroid } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
+import { Menu, MenuOptions, MenuOption, MenuTrigger, SlideInMenu } from 'react-native-popup-menu';
+
 
 
 interface Props {
@@ -113,7 +115,13 @@ const useStyles = (themeId: number, showTopBorder: boolean) => {
 		});
 	}, [themeId, showTopBorder]);
 };
-
+const TriggerPassthrough = React.forwardRef<View, any>(
+	(props, ref) => (
+		<View ref={ref} collapsable={false}>
+			{props.children}
+		</View>
+	),
+);
 const NoteItemComponent: React.FC<Props> = memo(props => {
 	const styles = useStyles(props.themeId, props.index !== 0);
 	const dialogs = useContext(DialogContext);
@@ -167,58 +175,58 @@ const NoteItemComponent: React.FC<Props> = memo(props => {
 		}
 	}, [props.note, props.noteSelectionEnabled, props.dispatch]);
 
-	const onLongPress = useCallback(async () => {
-		const now = Date.now();
+	const [menuOpen, setMenuOpen] = useState(false);
+const closeMenu = useCallback(() => setMenuOpen(false), []);
 
-		// Suppress duplicate long press triggers during interval, to avoid conflicting with right click event handling on web
-		if (now < suppressPressUntilRef.current) return;
-		suppressPressUntilRef.current = now + 500;
+const copyNoteContent = useCallback(async () => {
+	if (!props.note) return;
+	const fullNote = await Note.load(props.note.id);
+	if (!fullNote) return;
+	Clipboard.setString(`${fullNote.title ?? ''}\n\n${fullNote.body ?? ''}`);
+	ToastAndroid.show('已复制到剪贴板', ToastAndroid.SHORT);
+}, [props.note]);
 
-		if (!props.note) return;
+const cutNoteToClipboard = useCallback(async () => {
+	if (!props.note) return;
+	const fullNote = await Note.load(props.note.id);
+	if (!fullNote) return;
+	Clipboard.setString(`${fullNote.title ?? ''}\n\n${fullNote.body ?? ''}`);
+	await Note.delete(fullNote.id);
+	ToastAndroid.show('已复制，原笔记已移入回收站', ToastAndroid.SHORT);
+}, [props.note]);
 
-		// 加载完整笔记（确保有 body 字段）
-		const fullNote = await Note.load(props.note.id);
-		if (!fullNote) return;
+const startMultiSelect = useCallback(() => {
+	if (!props.note) return;
+	props.dispatch({ type: 'NOTE_SELECTION_START', noteId: props.note.id });
+}, [props.dispatch, props.note]);
 
-		Alert.alert(
-			fullNote.title || '笔记操作',
-			'选择操作：',
-			[
-				{
-				 text: '复制正文',
-                onPress: () => {
-                    Clipboard.setString(fullNote.body ?? '');
-                    ToastAndroid.show('已复制笔记内容', ToastAndroid.SHORT);
-                },
+const deleteNoteWithConfirm = useCallback(() => {
+	if (!props.note) return;
+	Alert.alert(
+		'删除笔记',
+		`确定将「${props.note.title ?? '无标题'}」移入回收站吗？`,
+		[
+			{ text: '取消', style: 'cancel' },
+			{
+				text: '删除',
+				style: 'destructive',
+				onPress: async () => {
+					await Note.delete(props.note.id);
+					ToastAndroid.show('笔记已移入回收站', ToastAndroid.SHORT);
 				},
-				{
-				text: '剪切笔记',
-                onPress: async () => {
-                    Clipboard.setString(fullNote.body ?? '');
-                    await Note.delete(fullNote.id);
-                    ToastAndroid.show('已复制内容，原笔记已移入回收站', ToastAndroid.SHORT);
-                },
+			},
+		],
+		{ cancelable: true },
+	);
+}, [props.note]);
 
-				},
-				{
-					text: '多选',
-					onPress: () => {
-						if (!props.noteSelectionEnabled) {
-							AccessibilityInfo.announceForAccessibility(_('Entering selection mode'));
-						}
-						props.dispatch({
-							type: props.noteSelectionEnabled ? 'NOTE_SELECTION_TOGGLE' : 'NOTE_SELECTION_START',
-							id: props.note.id,
-						});
-					},
-				},
-				{ text: '取消', style: 'cancel' },
-			],
-			{ cancelable: true },
-		);
-
-	}, [props.dispatch, props.note, props.noteSelectionEnabled]);
-
+const onLongPress = useCallback(() => {
+	const now = Date.now();
+	if (now < suppressPressUntilRef.current) return;
+	suppressPressUntilRef.current = now + 500;
+	if (!props.note) return;
+	setMenuOpen(true);
+}, [props.note]);
 
 
 
