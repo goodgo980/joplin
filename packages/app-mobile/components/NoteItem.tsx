@@ -122,6 +122,13 @@ const TriggerPassthrough = React.forwardRef<View, any>(
 		</View>
 	),
 );
+const TriggerPassthrough = React.forwardRef<View, any>(
+	(props, ref) => (
+		<View ref={ref} collapsable={false}>
+			{props.children}
+		</View>
+	),
+);
 const NoteItemComponent: React.FC<Props> = memo(props => {
 	const styles = useStyles(props.themeId, props.index !== 0);
 	const dialogs = useContext(DialogContext);
@@ -175,7 +182,8 @@ const NoteItemComponent: React.FC<Props> = memo(props => {
 		}
 	}, [props.note, props.noteSelectionEnabled, props.dispatch]);
 
-	const [menuOpen, setMenuOpen] = useState(false);
+// ============ 长按菜单：状态与动作 ============
+const [menuOpen, setMenuOpen] = useState(false);
 const closeMenu = useCallback(() => setMenuOpen(false), []);
 
 const copyNoteContent = useCallback(async () => {
@@ -197,7 +205,7 @@ const cutNoteToClipboard = useCallback(async () => {
 
 const startMultiSelect = useCallback(() => {
 	if (!props.note) return;
-	props.dispatch({ type: 'NOTE_SELECTION_START', noteId: props.note.id });
+	props.dispatch({ type: 'NOTE_SELECTION_START', id: props.note.id });
 }, [props.dispatch, props.note]);
 
 const deleteNoteWithConfirm = useCallback(() => {
@@ -220,6 +228,7 @@ const deleteNoteWithConfirm = useCallback(() => {
 	);
 }, [props.note]);
 
+// ============ 长按：打开菜单（保留原防抖） ============
 const onLongPress = useCallback(() => {
 	const now = Date.now();
 	if (now < suppressPressUntilRef.current) return;
@@ -227,6 +236,7 @@ const onLongPress = useCallback(() => {
 	if (!props.note) return;
 	setMenuOpen(true);
 }, [props.note]);
+
 
 
 
