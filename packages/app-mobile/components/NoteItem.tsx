@@ -122,13 +122,6 @@ const TriggerPassthrough = React.forwardRef<View, any>(
 		</View>
 	),
 );
-const TriggerPassthrough = React.forwardRef<View, any>(
-	(props, ref) => (
-		<View ref={ref} collapsable={false}>
-			{props.children}
-		</View>
-	),
-);
 const NoteItemComponent: React.FC<Props> = memo(props => {
 	const styles = useStyles(props.themeId, props.index !== 0);
 	const dialogs = useContext(DialogContext);
@@ -277,6 +270,8 @@ const onLongPress = useCallback(() => {
 		...onLongPressProps,
 	};
 	return (
+		<Menu renderer={SlideInMenu} opened={menuOpen} onBackdropPress={closeMenu} onSelect={closeMenu}>
+		<MenuTrigger customStyles={{ TriggerTouchableComponent: TriggerPassthrough }}>
 		<View style={opacityStyle}>
 			<View style={styles.listItemDivider}/>
 			<MultiTouchableOpacity
@@ -295,6 +290,17 @@ const onLongPress = useCallback(() => {
 				) : titleElement}
 			</MultiTouchableOpacity>
 		</View>
+		</MenuTrigger>
+		<MenuOptions customStyles={{ optionWrapper: { padding: 14 } }}>
+			<MenuOption onSelect={() => void copyNoteContent()} text='复制内容' />
+			<MenuOption onSelect={() => void cutNoteToClipboard()} text='剪切笔记' />
+			<MenuOption onSelect={startMultiSelect} text='多选' />
+			<MenuOption onSelect={deleteNoteWithConfirm}>
+				<Text style={{ color: '#e5484d', fontSize: 16 }}>删除笔记</Text>
+			</MenuOption>
+		</MenuOptions>
+	</Menu>
+
 	);
 });
 
