@@ -225,7 +225,7 @@ const cutNoteToClipboard = useCallback(async () => {
 
 const startMultiSelect = useCallback(() => {
 	if (!props.note) return;
-	props.dispatch({ type: 'NOTE_SELECTION_START', id: props.note.id });
+	props.dispatch({ type: 'NOTE_SELECTION_TOGGLE', id: props.note.id });
 }, [props.dispatch, props.note]);
 
 const deleteNoteWithConfirm = useCallback(() => {
