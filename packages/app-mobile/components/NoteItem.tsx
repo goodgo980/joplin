@@ -19,7 +19,7 @@ import NoteLockSession from '@joplin/lib/services/noteLock/NoteLockSession';
 import { DialogContext } from './DialogManager';
 import Icon from './Icon';
 import Clipboard from '@react-native-clipboard/clipboard';
-import { Menu, MenuOptions, MenuOption, MenuTrigger, renderers } from 'react-native-popup-menu';
+import { Menu, MenuOptions, MenuOption, MenuTrigger } from 'react-native-popup-menu';
 
 
 
@@ -86,23 +86,14 @@ const useStyles = (themeId: number, showTopBorder: boolean) => {
 		// 弹层容器：库默认写死白底，这里改为跟随主题
 		const menuContainer: ViewStyle = {
 			backgroundColor: theme.backgroundColor,
-			borderTopLeftRadius: 14,
-			borderTopRightRadius: 14,
-			paddingTop: 8,
-			// SlideInMenu 源码未处理 safe area，
-			// 手势导航设备上系统横条可能压住最后一项，给足底部留白
-			paddingBottom: 16,
-		};
-
-		// 弹层顶部的小拖动条（纯装饰）
-		const menuHandle: ViewStyle = {
-			alignSelf: 'center',
-			width: 36,
-			height: 4,
-			borderRadius: 2,
-			backgroundColor: theme.dividerColor,
-			marginTop: 6,
-			marginBottom: 2,
+			borderRadius: 10,
+			minWidth: 168,
+			paddingVertical: 4,
+			shadowColor: '#000',
+			shadowOffset: { width: 0, height: 4 },
+			shadowOpacity: 0.25,
+			shadowRadius: 6,
+			elevation: 12,
 		};
 
 		// 菜单项文字颜色：MenuOption 的 text 简写默认继承黑色，
@@ -144,12 +135,10 @@ const useStyles = (themeId: number, showTopBorder: boolean) => {
 			uncheckedOpacityStyle: { },
 			// ===== 新增的菜单样式 =====
 			menuContainer,
-			menuHandle,
 			menuOptionText,
 		});
 	}, [themeId, showTopBorder]);
 };
-const { SlideInMenu } = renderers;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 库会向 trigger 组件传触摸 props，此处仅透传
 const TriggerPassthrough = React.forwardRef<View, any>(
 	(props, ref) => (
@@ -163,7 +152,6 @@ const NoteItemComponent: React.FC<Props> = memo(props => {
 	const dialogs = useContext(DialogContext);
 	const [checkboxKey, setCheckboxKey] = useState(0);
 	const suppressPressUntilRef = useRef(0);
-
 	const todoCheckbox_change = useCallback(async (checked: boolean) => {
 		if (!props.note) return;
 
@@ -257,6 +245,7 @@ const deleteNoteWithConfirm = useCallback(() => {
 			},
 		],
 		{ cancelable: true },
+		
 	);
 }, [props.note]);
 
@@ -268,9 +257,6 @@ const onLongPress = useCallback(() => {
 	if (!props.note) return;
 	setMenuOpen(true);
 }, [props.note]);
-
-
-
 
 	const note = props.note ?? {};
 	const isTodo = !!Number(note.is_todo);
@@ -309,7 +295,7 @@ const onLongPress = useCallback(() => {
 		...onLongPressProps,
 	};
 	return (
-		<Menu renderer={SlideInMenu} opened={menuOpen} onBackdropPress={closeMenu} onSelect={closeMenu}>
+<Menu opened={menuOpen} onBackdropPress={closeMenu} onSelect={closeMenu}>
 		<MenuTrigger customStyles={{ TriggerTouchableComponent: TriggerPassthrough }}>
 		<View style={opacityStyle}>
 			<View style={styles.listItemDivider}/>
@@ -337,7 +323,6 @@ const onLongPress = useCallback(() => {
 		optionWrapper: { padding: 14 },
 	}}
 >
-	<View style={styles.menuHandle} />                   {/* 可选：拖动条装饰 */}
 	<MenuOption onSelect={() => void copyNoteContent()} text='复制内容' />
 	<MenuOption onSelect={() => void cutNoteToClipboard()} text='剪切笔记' />
 	<MenuOption onSelect={startMultiSelect} text='多选' />
