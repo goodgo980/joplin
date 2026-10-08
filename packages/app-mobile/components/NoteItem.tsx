@@ -207,6 +207,7 @@ const [menuOpen, setMenuOpen] = useState(false);
 const closeMenu = useCallback(() => setMenuOpen(false), []);
 
 const copyNoteContent = useCallback(async () => {
+	setMenuOpen(false);
 	if (!props.note) return;
 	const fullNote = await Note.load(props.note.id);
 	if (!fullNote) return;
@@ -215,6 +216,7 @@ const copyNoteContent = useCallback(async () => {
 }, [props.note]);
 
 const cutNoteToClipboard = useCallback(async () => {
+	setMenuOpen(false);
 	if (!props.note) return;
 	const fullNote = await Note.load(props.note.id);
 	if (!fullNote) return;
@@ -224,11 +226,19 @@ const cutNoteToClipboard = useCallback(async () => {
 }, [props.note]);
 
 const startMultiSelect = useCallback(() => {
+	setMenuOpen(false);
 	if (!props.note) return;
-	props.dispatch({ type: 'NOTE_SELECTION_TOGGLE', id: props.note.id });
-}, [props.dispatch, props.note]);
+	if (props.noteSelectionEnabled) {
+		// 已在多选模式：把当前笔记加入/移出已选列表
+		props.dispatch({ type: 'NOTE_SELECTION_TOGGLE', id: props.note.id });
+	} else {
+		// 未开启多选：进入多选模式并选中当前笔记
+		props.dispatch({ type: 'NOTE_SELECTION_START', id: props.note.id });
+	}
+}, [props.dispatch, props.note, props.noteSelectionEnabled]);
 
 const deleteNoteWithConfirm = useCallback(() => {
+	setMenuOpen(false);
 	if (!props.note) return;
 	Alert.alert(
 		'删除笔记',
@@ -295,7 +305,7 @@ const onLongPress = useCallback(() => {
 		...onLongPressProps,
 	};
 	return (
-<Menu opened={menuOpen} onBackdropPress={closeMenu} onSelect={closeMenu}>
+<Menu opened={menuOpen} onBackdropPress={closeMenu} onClose={closeMenu} onSelect={closeMenu}>
 		<MenuTrigger customStyles={{ TriggerTouchableComponent: TriggerPassthrough }}>
 		<View style={opacityStyle}>
 			<View style={styles.listItemDivider}/>
